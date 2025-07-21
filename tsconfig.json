@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2022",                                  /* 指定 ECMAScript 目標版本 */
+    "module": "commonjs",
+    "outDir": "./dist",                                  /* 指定輸出目錄 */
+    "rootDir": "./src",                                  /* 指定輸入源碼目錄 */
+    "esModuleInterop": true,                             /* 允許從 CommonJS 模組中預設導入 */
+    "forceConsistentCasingInFileNames": true,            /* 強制檔案系統大小寫一致 */
+    "strict": true,                                      /* 啟用所有嚴格型別檢查選項 */
+    "skipLibCheck": true,
+    "noImplicitAny": false,                                 /* 跳過所有 .d.ts 宣告檔案的型別檢查 */
+  },
+  "include": ["src/**/*.ts"],                            /* 包含所有 src 資料夾下的 .ts 檔案 */
+  "exclude": ["node_modules"]                            /* 排除 node_modules 資料夾 */
+}

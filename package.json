@@ -1,0 +1,50 @@
+{
+  "name": "khurhymingdict_backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon src/app.ts",
+    "build": "tsc --project ./",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sequelize": "npx sequelize-cli",
+    "db:migrate": "npm run sequelize db:migrate",
+    "db:migrate:undo": "npm run sequelize db:migrate:undo",
+    "db:migrate:undo:all": "npm run sequelize db:migrate:undo:all",
+    "db:seed": "npm run sequelize db:seed:all",
+    "db:seed:undo": "npm run sequelize db:seed:undo",
+    "db:seed:undo:all": "npm run sequelize db:seed:undo:all",
+    "db:create": "npm run sequelize db:create",
+    "model:generate": "npm run sequelize model:generate",
+    "migration:generate": "npm run sequelize migration:generate",
+    "seed:generate": "npm run sequelize seed:generate"
+  },
+  "keywords": [
+    "sequelize",
+    "typescript",
+    "database"
+  ],
+  "author": "KUS_TW",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.14.2",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.0.13",
+    "@types/sequelize": "^4.28.20",
+    "sequelize-cli": "^6.6.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}
