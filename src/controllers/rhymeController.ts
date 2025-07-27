@@ -1,14 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import { Op, where } from 'sequelize';
 import db from '../models';
-import { get } from 'http';
+import { getCoda, getNasal, getVowel } from '../utils/utils';
 
-
-export const getRhymeList = async (req : Request, res : Response, next : NextFunction) => {
+/**
+ * getRhyme
+ * Ēng lâi chhiau chhōe ta̍k ūn bó ê chu liāu.
+ * @param req Ùi req.query chiap siu chham sò͘ thang ùi DB chhiau chhōe chu liāu
+ * @param res Thoân HTTP ê hôe èng tńg khì, JSON ē pau chu liāu a̍h sī sìn sit, koh ū sêng kong ê phiau kì.
+ * @param next 
+ */
+export const getRhyme = async (req : Request, res : Response, next : NextFunction) => {
     try {
-        const rhymes = await db.Rhyme.findAll();
+        const {id, lomaji, hanji, vowel, coda, nasal, desc} = req.query;
+        const whereCondition : {[key : string]: any} = {};
+        if(typeof id ==='string' && id) whereCondition.id = id;
+        if(typeof lomaji ==='string' && lomaji) whereCondition.lomaji = lomaji;
+        if(typeof hanji ==='string' && hanji) whereCondition.hanji = hanji;
+        if(typeof vowel ==='string' && vowel) whereCondition.vowel = vowel;
+        if(typeof coda ==='string' && coda) whereCondition.coda = coda;
+        if(typeof nasal ==='string' && nasal) {
+            if(nasal.toLowerCase()==='true') whereCondition.nasal = true;
+            else if(nasal.toLowerCase()==='false' || nasal === '') whereCondition.nasal = false;
+        }else if(nasal !== undefined) {
+            whereCondition.nasal = true;
+        }
+        if(typeof desc ==='string' && desc) whereCondition.desc = desc;
+        const rhymes = await db.Rhyme.findAll({where: whereCondition});
         if(!rhymes || rhymes.length === 0) {
-            res.status(404).json({message: "No rhyme founded."});
+            res.status(404).json({message: "No rhyme founded.", successful : false});
         }
         res.status(200).json(rhymes.map(item=>item.toJSON()));
     } catch (error) {
@@ -16,50 +36,15 @@ export const getRhymeList = async (req : Request, res : Response, next : NextFun
     }
 };
 
-export const getRhyme = async (req : Request, res : Response, next : NextFunction) => {
-    try {
-        const rhyme = await db.Rhyme.findAll({
-            where: {
-                lomaji: req.params.lomaji,
-            }
-        });
-        if(!rhyme){
-            res.status(404).json({message: "No rhyme founded, check the parameter."})
-        }
-        res.status(200).json(rhyme.map(item=>item.toJSON()));
-    } catch (error) {
-        next(error);
-    }
-};
+/**
+ * initRhymes
+ * Ēng lâi reset DB lāi té ê ūn bó chu liāu (khai hoat iōng).
+ * @param req Ùi req.query chiap siu chham sò͘ thang ùi DB chhiau chhōe chu liāu
+ * @param res Thoân HTTP ê hôe èng tńg khì, JSON ē pau chu liāu a̍h sī sìn sit, koh ū sêng kong ê phiau kì.
+ * @param next 
+ */
 export const initRhymes = async (req : Request, res : Response, next : NextFunction) => {
-    const codaList = ['ng', 'p', 't', 'k', 'h', 'm', 'n'];
-    const vowelList = ['iau', 'oai', 'ai', 'au', 'ia', 'iu', 'io', 'oa', 'oe', 'ui', 'a', 'i', 'u', 'o͘', 'e', 'o'];
-    const getVowel = (rhyme : string) => {
-        for(const vowel of vowelList){
-            if(rhyme.includes(vowel)){
-                return vowel;
-            }
-        }
-        if(rhyme.endsWith('m') || rhyme.endsWith('mh')) return 'm';
-        if(rhyme.endsWith('ng') || rhyme.endsWith('ngh')) return 'ng';
-        return "";
-    };
-    const getCoda = (rhyme : string) => {
-        const vowel = getVowel(rhyme);
-        for(const coda of codaList){
-            if(vowel === 'm' || vowel === 'ng' ){
-                if(rhyme.replace('ⁿ','').endsWith('h'))
-                    return 'h';
-            }else{
-                if(rhyme.replace('ⁿ','').endsWith(coda))
-                    return coda;
-            }
-        }
-        return null;
-    };
-    const getNasal = (rhyme : string) => {
-        return rhyme.includes('ⁿ');
-    };
+    
     const getDataCounts = () => {
         return 0;
     };

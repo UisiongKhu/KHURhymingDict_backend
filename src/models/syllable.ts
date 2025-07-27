@@ -1,38 +1,42 @@
 import { Model, Optional, DataTypes, Sequelize } from 'sequelize';
 
-type RhymeAttribute = {
+export type SyllableAttribute = {
     id: number,
     lomaji: string,
-    hanji: string | null,
+    hanjiKip: string | null,
+    hanjiClj: string | null,
+    consonant: string | null,
     vowel: string,
     coda: string | null,
+    tone: number,
     nasal: boolean,
     desc: string | null,
-    dataCounts: number,
     createdAt?: Date, // Sequelize ē chū tōng siat tēng sî kan ê phiau kì, só͘ í ē bīn ê init m̄ bián declare, m̄ koh chia iáu sī ài pó liû.
     updatedAt?: Date,
 }
 
 // Tēng gī bô it tēng ài siat ê chu liāu hāng.
-type RhymeCreateAttribute = Optional<RhymeAttribute, 'id' | 'coda' | 'desc' | 'createdAt' | 'updatedAt' | 'hanji' >;
+export type SyllableCreateAttribute = Optional<SyllableAttribute, 'id' | 'consonant' | 'coda' | 'desc' | 'createdAt' | 'updatedAt' | 'hanjiKip' | 'hanjiClj' >;
 
 // Tēng gī model ê attribute
-export class Rhyme extends Model<RhymeAttribute, RhymeCreateAttribute>{
+export class Syllable extends Model<SyllableAttribute, SyllableCreateAttribute>{
     declare id : number;
     declare lomaji : string;
-    declare hanji : string;
+    declare hanjiKip : string;
+    declare hanjiClj : string;
+    declare consonant : string;
     declare vowel : string;
     declare coda : string;
+    declare tone : number;
     declare nasal : boolean;
     declare desc : string;
-    declare dataCounts: number;
     declare createdAt : Date;
     declare updatedAt : Date;
 }
 
 // Model Initialization
-export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Rhyme => {
-    Rhyme.init({
+export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Syllable => {
+    Syllable.init({
         id: {
             type: dataTypes.INTEGER.UNSIGNED,
             primaryKey: true,
@@ -43,7 +47,17 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Rhyme
             type: dataTypes.STRING,
             allowNull: false,
         },
-        hanji: {
+        hanjiKip: {
+            type: dataTypes.STRING,
+            allowNull: true,
+            field: 'hanji_kip',
+        },
+        hanjiClj: {
+            type: dataTypes.STRING,
+            allowNull: true,
+            field: 'hanji_clj',
+        },
+        consonant: {
             type: dataTypes.STRING,
             allowNull: true,
         },
@@ -55,6 +69,10 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Rhyme
             type: dataTypes.STRING,
             allowNull: true,
         },
+        tone: {
+            type: dataTypes.TINYINT.UNSIGNED,
+            allowNull: false,
+        },
         nasal: {
             type: dataTypes.BOOLEAN,
             allowNull: false,
@@ -63,19 +81,14 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Rhyme
             type: dataTypes.TEXT,
             allowNull: true,
         },
-        dataCounts: {
-            type: dataTypes.INTEGER.UNSIGNED,
-            allowNull: false,
-            field: 'data_counts',
-        }
     },{
         sequelize,
-        tableName: 'rhymes',
+        tableName: 'syllables',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
         timestamps: true,
         charset: 'utf8mb4'
     });
 
-    return Rhyme;
+    return Syllable;
 };

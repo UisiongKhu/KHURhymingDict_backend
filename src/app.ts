@@ -2,6 +2,7 @@ import {Sequelize} from 'sequelize';
 import config from './config/config';
 import cors from 'cors';
 import RhymeRoutes from './routes/rhymesRoute';
+import SyllableRoutes from './routes/syllablesRoute';
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 const app = express();
 const host = '0.0.0.0';
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/api/rhymes', RhymeRoutes);
+app.use('/api/syllables', SyllableRoutes);
 
 app.get('/', (req, res) => {
   res.send('The server is working!');
