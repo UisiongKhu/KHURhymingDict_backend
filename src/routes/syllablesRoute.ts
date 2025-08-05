@@ -3,9 +3,9 @@ import { addSyllable, deleteSyllable, getSyllable, updateSyllable } from "../con
 
 const router = Router();
 
-router.post('/add', addSyllable);
-router.get('/get', getSyllable);
-router.post('/update', updateSyllable);
-router.delete('/delete', deleteSyllable);
+router.get('/', getSyllable); // Read
+router.post('/', addSyllable); // Create
+router.patch('/:id', updateSyllable); // Update
+router.delete('/:id', deleteSyllable); // Delete
 
 export default router;

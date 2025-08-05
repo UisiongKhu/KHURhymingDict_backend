@@ -1,4 +1,6 @@
 import { Model, Optional, DataTypes, Sequelize } from 'sequelize';
+import { Word } from './word';
+import { Op } from 'sequelize';
 
 export type SyllableAttribute = {
     id: number,
@@ -89,6 +91,24 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Sylla
         timestamps: true,
         charset: 'utf8mb4'
     });
+
+    /*Syllable.beforeDestroy(async (syllable, options) => {
+        const syllableIdToDelete = syllable.id;
+        const wordsToDestroy = await Word.findAll({
+            where: {
+                syllableIds: {
+                    [Op.contains]: syllableIdToDelete.toString(),
+                }
+            }
+        });
+
+        if(wordsToDestroy.length > 0){
+            console.log(`Tng teh thâi Syllable ID = ${syllableIdToDelete} ê chu liāu, ē sūn sòa thâi kiau i sio khan liân ê ${wordsToDestroy.length} ê sû lūi ê chu liāu.`);
+            for(const word of wordsToDestroy){
+                await word.destroy({transaction: options.transaction});
+            }
+        }
+    });*/
 
     return Syllable;
 };

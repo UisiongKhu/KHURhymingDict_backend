@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Op, where } from 'sequelize';
 import db from '../models';
-import { SyllableCreateAttribute } from '../models/syllable';
+import syllable, { Syllable, SyllableCreateAttribute } from '../models/syllable';
 import sequelize from 'sequelize';
 
 
@@ -59,7 +59,6 @@ export const addSyllable = async (req : Request, res : Response, next : NextFunc
     try {
         // Soeh bêng: Tī leh cheng ka chi̍t ê Im chat ê sî ài kā i só͘ tùi èng ê rhymes chu liāu lia̍t toaⁿ lāi té ê dataCounts thiⁿ 1.
         const {lomaji, hanjiKip, hanjiClj, consonant, vowel, coda, tone, nasal, desc} = req.body;
-        console.log({lomaji, hanjiKip, hanjiClj, consonant, vowel, coda, tone, nasal, desc})
         if(!lomaji){
             return next(new Error('Field "lomaji" is needed.'));
         }
@@ -74,6 +73,18 @@ export const addSyllable = async (req : Request, res : Response, next : NextFunc
             nasal: nasal,
             desc: desc || null, 
         }
+
+        // Ke thiⁿ chìn chêng ài seng kiám cha kám í keng ū sio kâng ê chu liāu.
+        const checkSyllable = await db.Syllable.findOne({
+            where: newSyllableData,
+            transaction
+        });
+        if(checkSyllable){
+            await transaction.rollback();
+            res.status(409).json({message: 'Í keng ū sio kâng ê chu liāu ah, chhiáⁿ koh kiám cha Request ê lōe iông.', successful: false});
+            return;
+        }
+
         const newSyllable = await db.Syllable.create(newSyllableData,{transaction});
 
         const affectedObj = await db.Rhyme.increment({
@@ -122,50 +133,49 @@ export const addSyllable = async (req : Request, res : Response, next : NextFunc
  * @type POST
  */
 export const updateSyllable = async (req : Request, res : Response, next : NextFunction) => {
+    const transaction = await db.sequelize.transaction();
     try {
-        const {id, lomaji, hanjiKip, hanjiClj, consonant, vowel, coda, tone, nasal, desc} = req.query;
-        const {newLomaji, newHanjiKip, newHanjiClj, newConsonant, newVowel, newCoda, newTone, newNasal, newDesc} = req.body;
-        const whereCondition : {[key:string]:any} = {};
-        if(typeof id === 'string' && id) whereCondition.id = id;
-        if(typeof lomaji === 'string' && lomaji) whereCondition.lomaji = lomaji;
-        if(typeof hanjiKip === 'string' && hanjiKip) whereCondition.hanjiKip = hanjiKip;
-        if(typeof hanjiClj === 'string' && hanjiClj) whereCondition.hanjiClj = hanjiClj;
-        if(typeof consonant === 'string' && consonant) whereCondition.consonant = consonant;
-        if(typeof vowel === 'string' && vowel) whereCondition.vowel = vowel;
-        if(typeof coda === 'string' && coda) whereCondition.coda = coda;
-        if(typeof tone === 'string' && tone) whereCondition.tone = tone;
-        if(typeof nasal ==='string' && nasal) {
-            if(nasal.toLowerCase()==='true') whereCondition.nasal = true;
-            else if(nasal.toLowerCase()==='false' || nasal === '') whereCondition.nasal = false;
-        }else if(nasal !== undefined) {
-            whereCondition.nasal = true;
-        }
-        if(typeof desc === 'string' && desc) whereCondition.desc = desc;
-
+        const { lomaji, hanjiKip, hanjiClj, consonant, vowel, coda, tone, nasal, desc} = req.body;
+        const {id: targetId} = req.params;
         const updateValue : {[key:string]:any} = {};
-        if(typeof newLomaji === 'string' && newLomaji) updateValue.lomaji = newLomaji;
-        if(typeof newHanjiKip === 'string' && newHanjiKip) updateValue.hanjiKip = newHanjiKip;
-        if(typeof newHanjiClj === 'string' && newHanjiClj) updateValue.hanjiClj = newHanjiClj;
-        if(typeof newConsonant === 'string' && newConsonant ) updateValue.consonant = newConsonant;
-        if(typeof newVowel === 'string' && newVowel) updateValue.vowel = newVowel;
-        if(typeof newCoda === 'string' && newCoda) updateValue.coda = newCoda;
-        if(typeof newTone === 'string' && newTone) updateValue.tone = newTone;
-        if(typeof newNasal ==='string' && newNasal) {
-            if(newNasal.toLowerCase()==='true') updateValue.nasal = true;
-            else if(newNasal.toLowerCase()==='false' || newNasal === '') updateValue.nasal = false;
-        }else if(newNasal !== undefined) {
+        if(typeof lomaji === 'string' && lomaji) updateValue.lomaji = lomaji;
+        if(typeof hanjiKip === 'string' && hanjiKip) updateValue.hanjiKip = hanjiKip;
+        if(typeof hanjiClj === 'string' && hanjiClj) updateValue.hanjiClj = hanjiClj;
+        if(typeof consonant === 'string' && consonant) updateValue.consonant = consonant;
+        if(typeof vowel === 'string' && vowel) updateValue.vowel = vowel;
+        if(typeof coda === 'string' && coda) updateValue.coda = coda;
+        if(typeof tone === 'string' && tone) updateValue.tone = tone;
+        if(typeof nasal ==='string' && nasal) {
+            if(nasal.toLowerCase()==='true') updateValue.nasal = true;
+            else if(nasal.toLowerCase()==='false' || nasal === '') updateValue.nasal = false;
+        }else if(nasal !== undefined) {
             updateValue.nasal = true;
         }
-        if(typeof newDesc === 'string' && newDesc) updateValue.desc = newDesc;
-        const syllables = await db.Syllable.update(updateValue,{where: whereCondition});
+        if(typeof desc === 'string' && desc) updateValue.desc = desc;
+
+        const checkSyllable = await db.Syllable.findOne({
+            where: updateValue,
+            transaction,
+        });
+
+        if(checkSyllable){
+            await transaction.rollback();
+            res.status(409).json({message: 'Í keng ū sio kâng ê chu liāu ah, chhiáⁿ koh kiám cha Request ê lōe iông.', successful: false});
+            return;
+        }
+
+        const syllables = await db.Syllable.update(updateValue,{where: {id: targetId}, transaction});
         if(syllables.at(0)===0){
+            await transaction.rollback();
             res.status(404).json({message: 'No syllable founded.', successful: false});
             return;
         }else{
-            res.status(200).json({message: 'Syllable updaed.', successful: true});
+            await transaction.commit();
+            res.status(200).json({message: 'Syllable updated.', successful: true});
             return;
         }
     } catch (error) {
+            await transaction.rollback();
         console.error('The̍h Syllable lia̍t toaⁿ ê sî tn̄g tio̍h būn tê: ', error);
         next(error);
     }
@@ -183,63 +193,82 @@ export const updateSyllable = async (req : Request, res : Response, next : NextF
 export const deleteSyllable = async (req : Request, res : Response, next : NextFunction) => {
     const transaction = await db.sequelize.transaction();
     try {
-        const {id, lomaji, hanjiKip, hanjiClj, consonant, vowel, coda, tone, nasal, desc} = req.body;
-        if(!vowel || !nasal || !coda){
+        const {id: targetId} = req.params;
+        console.log(`開始卜刣音節資料、指定 ID：${targetId}`);
+        const targetIdString = targetId.toString();
+        const target = await db.Syllable.findByPk(targetId);
+        if(!target){
             await transaction.rollback();
-            res.status(400).json({message: 'Necessary Fields: lomaji, vowel, coda, nasal.', successful: false});
+            res.status(404).json({message: 'Chhōe bô lí beh ài hiat ka̍k ê chu liāu.', successful: false});
             return;
         }
-        const whereCondition : {[key:string]:any} = {};
-        if(typeof id === 'string' && id) whereCondition.id = id;
-        if(typeof lomaji === 'string' && lomaji) whereCondition.lomaji = lomaji;
-        if(typeof hanjiKip === 'string' && hanjiKip) whereCondition.hanjiKip = hanjiKip;
-        if(typeof hanjiClj === 'string' && hanjiClj) whereCondition.hanjiClj = hanjiClj;
-        if(typeof consonant === 'string' && consonant) whereCondition.consonant = consonant;
-        if(typeof vowel === 'string' && vowel) whereCondition.vowel = vowel;
-        if(typeof coda === 'string' && coda) {
-            if(coda !== 'null') whereCondition.coda = coda;
-            else whereCondition.coda = null;
+
+        const condition = {
+            [Op.or]: [
+                // 第一種：陣列中只有一個元素，且該元素就是 targetId
+                // 例如："[7]"
+                { [Op.eq]: `[${targetIdString}]` },
+                
+                // 第二種：ID 在陣列的開頭，後面還有其他元素
+                // 例如："[7,8,9]"
+                { [Op.like]: `[${targetIdString},%` }, 
+
+                // 第三種：ID 在陣列的結尾，前面還有其他元素
+                // 例如："[4,5,7]"
+                { [Op.like]: `%,${targetIdString}]` },
+
+                // 第四種：ID 在陣列的中間
+                // 例如："[1,7,8]"
+                { [Op.like]: `%,${targetIdString},%` },
+            ]
+        };
+
+
+        const wordsToDestroy = await db.Word.findAll({
+            where: {
+                syllableIds: condition,
+            },
+            transaction,
+        });
+
+
+        if(wordsToDestroy && wordsToDestroy.length > 0){
+            console.log(`順紲卜刣个詞彙資料：${wordsToDestroy}`);
+            // 使用 Promise.all 加速刪除多個 word
+            const destroyPromises = wordsToDestroy.map(word => word.destroy({transaction}));
+            await Promise.all(destroyPromises);
         }
-        if(typeof tone === 'string' && tone) whereCondition.tone = tone;
-        else if(typeof tone === 'number' && tone) whereCondition.tone = tone;
-        if(typeof nasal ==='string' && nasal) {
-            if(nasal.toLowerCase()==='true') whereCondition.nasal = true;
-            else if(nasal.toLowerCase()==='false' || nasal === '') whereCondition.nasal = false;
-        }else if(nasal !== undefined) {
-            whereCondition.nasal = true;
-        }
-        if(typeof desc === 'string' && desc) whereCondition.desc = desc;
-        if(Object.keys(whereCondition).length===0){
+
+
+        const syllable = await db.Syllable.destroy({where: {id: targetId}, transaction});
+        if(syllable===0){
             await transaction.rollback();
-            res.status(403).json({message: 'Bē sái kā lóng chóng ê chu liāu hiat ka̍k.', successful: false});
+            res.status(404).json({message: 'Chhōe bô lí beh ài hiat ka̍k ê chu liāu.', successful: false});
         }else{
-            const syllable = await db.Syllable.destroy({where: whereCondition, transaction});
-            if(syllable===0){
+            const affectedObj = await db.Rhyme.increment({
+                dataCounts: -syllable,
+            },{
+                where: {
+                    vowel: target.vowel,
+                    coda: target.coda,
+                    nasal: target.nasal,
+                },
+                transaction
+            })
+            if(affectedObj.at(0)![1]===0){
                 await transaction.rollback();
-                res.status(404).json({message: 'Chhōe bô lí beh ài hiat ka̍k ê chu liāu.', successful: false});
+                res.status(404).json({message: 'Chhōe bô Rhyme ê tùi èng chu liāu. Chhiáⁿ kiám cha dataCounts lân ūi kám tio̍h.'});
+                return;
             }else{
-                const affectedObj = await db.Rhyme.increment({
-                    dataCounts: -syllable,
-                },{
-                    where: {
-                        vowel: whereCondition.vowel,
-                        coda: whereCondition.coda,
-                        nasal: whereCondition.nasal,
-                    },
-                    transaction
-                })
-                if(affectedObj.at(0)![1]===0){
-                    await transaction.rollback();
-                    res.status(404).json({message: 'Chhōe bô Rhyme ê tùi èng chu liāu. Chhiáⁿ kiám cha dataCounts lân ūi kám tio̍h.'});
-                    return;
-                }else{
-                    await transaction.commit();
-                    res.status(200).json({message: 'Syllable Deleted.', successful: true});
-                }
+                await transaction.commit();
+                res.status(200).json({message: 'Syllable Deleted.', successful: true});
             }
         }
+
     } catch (error) {
         await transaction.rollback();
         next(error);
     }
 }
+
+//select * from words WHERE syllable_ids = "[7]" OR (syllable_ids NOT LIKE "[7]" AND syllable_ids LIKE "%,7,%") OR syllable_ids LIKE "[7,%" OR syllable_ids LIKE "%,7]";
