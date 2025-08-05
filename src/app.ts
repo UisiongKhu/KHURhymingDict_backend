@@ -3,6 +3,7 @@ import config from './config/config';
 import cors from 'cors';
 import RhymeRoutes from './routes/rhymesRoute';
 import SyllableRoutes from './routes/syllablesRoute';
+import WordRoutes from './routes/wordRoute';
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 const app = express();
 const host = '0.0.0.0';
@@ -15,6 +16,7 @@ app.use(cors());
 
 app.use('/api/rhymes', RhymeRoutes);
 app.use('/api/syllables', SyllableRoutes);
+app.use('/api/words', WordRoutes);
 
 app.get('/', (req, res) => {
   res.send('The server is working!');

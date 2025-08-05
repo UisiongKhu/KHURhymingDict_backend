@@ -3,6 +3,7 @@ import { Sequelize, DataTypes } from 'sequelize';
 
 import rhymeInit, {Rhyme} from './rhyme';
 import syllableInit, { Syllable } from './syllable';
+import wordInit, { Word } from './word';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
@@ -19,6 +20,7 @@ export interface Db {
     Sequelize : typeof Sequelize;
     Rhyme : typeof Rhyme;
     Syllable : typeof Syllable;
+    Word: typeof Word;
 }
 
 const db : Db = {
@@ -26,6 +28,7 @@ const db : Db = {
     Sequelize,
     Rhyme: rhymeInit(sequelize, DataTypes),
     Syllable: syllableInit(sequelize, DataTypes),
+    Word: wordInit(sequelize, DataTypes),
 }
 
 export default db;
