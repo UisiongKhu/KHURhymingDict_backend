@@ -56,16 +56,16 @@ export const initRhymes = async (req : Request, res : Response, next : NextFunct
             "ai", "aiⁿ", "aih", "aihⁿ",
 
             // 韻腹 [au]
-            "au", "auh",
+            "au", "auh", "auⁿ", "auhⁿ",
 
             // 韻腹 [e]
             "e", "eⁿ", "eh", "ehⁿ",
 
             // 韻腹 [i]
-            "i", "im", "in", "ip", "it", "ih", "ihⁿ",
+            "i", "iⁿ", "im", "in", "ip", "it", "ih", "ihⁿ",
 
             // 韻腹 [ia]
-            "ia", "iaⁿ", "iam", "ian", "iap", "iat", "iak", "iah", "iahⁿ",
+            "ia", "iaⁿ", "iam", "ian", "iang", "iap", "iat", "iak", "iah", "iahⁿ",
 
             // 韻腹 [iau]
             "iau", "iauⁿ", "iauh",
@@ -83,22 +83,22 @@ export const initRhymes = async (req : Request, res : Response, next : NextFunct
             "o", "oh",
 
             // 韻腹 [ɔ]
-            "o͘", "oⁿ", "om", "ong", "ohⁿ", "ok",
+            "o͘", "o͘h", "oⁿ", "om", "ong", "ohⁿ", "ok", "op",
 
             // 韻腹 [oa]
-            "oa", "oaⁿ", "oan", "oat", "oah",
+            "oa", "oaⁿ", "oan", "oang", "oat", "oah",
 
             // 韻腹 [oai]
             "oai", "oaiⁿ",
 
             // 韻腹 [oe]
-            "oe", "oeh",
+            "oe", "oeh", "oeⁿ",
 
             // 韻腹 [u]
             "u", "un", "ut", "uh",
 
             // 韻腹 [ui]
-            "ui",
+            "ui", "uih", "ûiⁿ",
 
             // 特殊韻母 [m] (自成音節)
             "m", "mh",
@@ -114,16 +114,16 @@ export const initRhymes = async (req : Request, res : Response, next : NextFunct
             "哀", "喈", "哎", "",
 
             // 韻腹 [au]
-            "歐", "𩛩",
+            "歐", "𩛩", "腦" ,"卯",
 
             // 韻腹 [e]
             "矮", "嬰", "厄", "",
 
             // 韻腹 [i]
-            "伊", "音", "因", "入", "食", "滴", "",
+            "伊", "嬰" , "音", "因", "入", "食", "滴", "",
 
             // 韻腹 [ia]
-            "命", "影", "鹽", "緣", "葉", "擛", "摔", "頁", "",
+            "命", "影", "鹽", "緣", "央", "葉", "擛", "摔", "頁", "",
 
             // 韻腹 [iau]
             "夭", "", "",
@@ -141,22 +141,22 @@ export const initRhymes = async (req : Request, res : Response, next : NextFunct
             "高", "學",
 
             // 韻腹 [ɔ]
-            "烏", "", "參", "王", "", "惡",
+            "烏", "膜", "", "參", "王", "", "惡", "橐",
 
             // 韻腹 [oa]
-            "沙", "官", "遠", "越", "活",
+            "沙", "官", "遠", "嚾", "越", "活",
 
             // 韻腹 [oai]
             "歪", "關",
 
             // 韻腹 [oe]
-            "話", "郭",
+            "話", "郭", "妹",
 
             // 韻腹 [u]
             "羽", "韻", "鬱", "欶",
 
             // 韻腹 [ui]
-            "為",
+            "為", "血", "梅",
 
             // 特殊韻母 [m] (自成音節)
             "毋", "",
@@ -172,7 +172,11 @@ export const initRhymes = async (req : Request, res : Response, next : NextFunct
         });
         for(let i = 0; i<allRhymes.length;i++) {
             const lomaji = allRhymes[i];
-            console.log(`Creating data for ${lomaji}`);
+            console.log(`Creating data for ${lomaji}, 
+                vowel=${getVowel(lomaji)}, 
+                coda=${getCoda(lomaji)},
+                nasal=${getNasal(lomaji)},
+            }`);
 
             await db.Rhyme.create({
                 lomaji: lomaji,
