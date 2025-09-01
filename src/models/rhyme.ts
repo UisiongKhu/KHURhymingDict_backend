@@ -74,7 +74,8 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof Rhyme
         createdAt: 'created_at',
         updatedAt: 'updated_at',
         timestamps: true,
-        charset: 'utf8mb4'
+        charset: 'utf8mb4',
+        collate: 'utf8mb4_bin',
     });
 
     return Rhyme;
