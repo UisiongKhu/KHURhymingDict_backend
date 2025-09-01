@@ -12,7 +12,7 @@ const sequelize = new Sequelize(config.development.database!, config.development
   host: 'localhost',
   port: 8763,
   dialect: 'mysql',
-  logging: true,
+  logging: config.development.logging,
 });
 
 export interface Db {
