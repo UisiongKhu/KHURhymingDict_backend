@@ -16,7 +16,7 @@ const config: DbConfig = {
     database: process.env.DB_NAME || 'KHURhymingDict',
     host: process.env.DB_HOST || '8763',
     dialect: 'mysql',
-    logging: true, // 設置為 true 可以看到 SQL 查詢日誌
+    logging: false, // 設置為 true 可以看到 SQL 查詢日誌
   },
   test: {
     // 測試環境設定
