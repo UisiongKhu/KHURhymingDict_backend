@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { Op, where } from 'sequelize';
 import db from '../models';
-import { SyllableCreateAttribute } from '../models/syllable';
-import sequelize from 'sequelize';
 import word, { WordCreateAttribute } from '../models/word';
-import { getJSONArrEqStatment } from '../utils/utils';
-
+import * as fs from 'fs';
+import csv from 'csv-parser';
+import { getHanjiKipArr, getLomajiArr, getNaturalToneMarkIndex, isHanji } from '../utils/utils';
+import { fileURLToPath } from 'url';
 
 export const getWord = async (req : Request, res : Response, next : NextFunction ) => {
     try {
@@ -214,3 +214,163 @@ export const test = async (req: Request, res : Response, next : NextFunction) =>
         res.status(404).json({message: "Couldn't find the target.", successful: true});
     }
 };
+
+interface KIPWordData {
+    DictWordID: string;
+    PojUnicode: string;
+    PojUnicodeOthers: string;
+    PojInput: string;
+    PojInputOthers: string;
+    KipUnicode: string;
+    KipUnicodeOthers: string;
+    KipInput: string;
+    KipInputOthers: string;
+    HanLoTaibunKip: string;
+    KipDictHanjiTaibunOthers: string;
+    KipDictWordProperty: string;
+    HoaBun: string;
+    KaisoehHanLoPoj: string;
+    KaisoehHanLoKip: string;
+    KipDictDialects: string;
+    Synonym: string;
+    Opposite: string;
+}
+
+/**
+ * Chū tōng chhōe Kàu Tián ê chu liāu kā sû lūi ji̍p ji̍p khì. Khah ke 5 im chat ê bē siu.
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export const importWordKIP = async (req : Request, res : Response, next : NextFunction) => {
+    const transaction = await db.sequelize.transaction();
+
+    try {
+         const findSyllableIds = async (lomajiArr : string[], hanjiKipArr : string[]) => {
+            const syllableIds : Array<number> = [];
+
+            for(let i = 0;i<lomajiArr.length;i++){
+                const lomaji = lomajiArr.at(i)!;
+                const hanjiKip = hanjiKipArr.at(i);
+
+                const whereCondition : {lomaji:string, hanjiKip?: string | null} = {
+                    lomaji,
+                }
+
+                if(hanjiKip !== undefined) whereCondition.hanjiKip = hanjiKip;
+                else whereCondition.hanjiKip = null;
+                const result = await db.Syllable.findOne({
+                    where: whereCondition,
+                });
+                if(result){
+                    syllableIds.push(result.id);
+                }
+            }
+            return syllableIds;
+        };
+
+
+
+        const wordFilePath = process.env.WORD_IMPORT_FILEPATH;
+        const failedFilePath = process.env.WORD_IMPORT_FAILED_FILEPATH;
+        console.log(process.cwd())
+        if(wordFilePath !== undefined){
+            const isWordFileExist = fs.existsSync(wordFilePath);
+            if(isWordFileExist){
+                const failedData : Array<{lomaji:string, hanjiKip:string, hanjiClj: any, syllableIds:any, natureToneMark:number|null}> = [];
+                const proccessingPromises : Promise<any>[] = [];
+                
+                await new Promise<void>((resolve,reject)=>{
+                    const stream = fs.createReadStream(wordFilePath);
+                    stream.pipe(csv()).on('data', async (data: KIPWordData) => {
+                        let word = {
+                            lomaji: data.PojUnicode,
+                            hanjiKip: data.HanLoTaibunKip,
+                            hanjiClj: null,
+                            syllableIds: null,
+                            natureToneMark: getNaturalToneMarkIndex(data.PojUnicode),
+                            desc: data.KaisoehHanLoPoj
+                        };
+
+                        //console.log(word);
+                        const lomajiArr = getLomajiArr(word.lomaji);
+                        const hanjiKipArr = getHanjiKipArr(word.hanjiKip);
+                        
+                        proccessingPromises.push(
+                            (async () => {
+                                if(lomajiArr.length < 5 && hanjiKipArr.length < 5 && !isHanji(word.lomaji)){
+                                    const syllableIds = await findSyllableIds(lomajiArr, hanjiKipArr);
+                                    if(syllableIds.length === 0){
+                                        failedData.push(word);
+                                    }else{
+                                        console.log(`lomaji=${word.lomaji}, hanjiKip=${word.hanjiKip}, syllableIds=${syllableIds}, natureToneMark=${word.natureToneMark}`);
+
+                                        const standardizedSyllableIds = JSON.stringify(syllableIds);
+
+                                        const existData = await db.Word.findOne({
+                                            where: {
+                                                syllableIds: standardizedSyllableIds,
+                                                natureToneMark: word.natureToneMark,
+                                            },
+                                            transaction,
+                                        })
+
+                                        if(existData){
+                                            failedData.push(word);
+                                            return;                                  
+                                        }
+
+                                        const wordData : WordCreateAttribute = {
+                                            lomaji: word.lomaji,
+                                            hanjiKip: word.hanjiKip,
+                                            syllableIds: standardizedSyllableIds,
+                                            natureToneMark: word.natureToneMark,
+                                        }
+                                        await db.Word.create(wordData, {transaction});
+                                    }
+                                }else{
+                                    failedData.push(word);
+                                }
+                            })()
+                        )
+                        
+                    }).on('end', async ()=>{
+                        console.log('Stream ended.');
+                        await Promise.all(proccessingPromises);
+                        console.log('OK');
+                        resolve();
+                    }).on('error', (err)=> {
+                        console.log('Rejected');
+                        reject(err);
+                    });
+                });
+
+                console.log(failedData.length);
+                const appendFailedData = async () =>{
+                    try {
+                        if(fs.existsSync(failedFilePath!)){
+                            await fs.writeFile(failedFilePath!, '', ()=>{});
+                        }
+                        for(const data of failedData){
+                            const line = `${data.lomaji}, ${data.hanjiKip}, ${data.syllableIds}, ${data.natureToneMark}\n`;
+                            await fs.appendFile(failedFilePath!,line,()=>{});
+                        }
+                    } catch (error) {
+                        console.error(error);
+                    }
+                };
+                await appendFailedData();
+                console.log(test);
+                await transaction.commit();
+                res.status(200).json({message: "nice", successful: true});
+            }else{
+                await transaction.rollback();
+                res.status(404).json({message: "Couldn't find the word file.", successful: false});
+            }
+        }
+    } catch (error) {
+       await transaction.rollback();
+       console.error(`From importWord(): `, error);
+    }
+       
+}

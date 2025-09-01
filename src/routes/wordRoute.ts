@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addWord, deleteWord, getWord, updateWord, test } from "../controllers/wordController";
+import { addWord, deleteWord, getWord, updateWord, test, importWordKIP } from "../controllers/wordController";
 
 const router = Router();
 
@@ -8,5 +8,6 @@ router.post('/', addWord); // Create
 router.patch('/:id', updateWord); // Update
 router.delete('/:id', deleteWord); // Delete
 router.get('/test/:id', test);
+router.get('/import', importWordKIP);
 
 export default router;
