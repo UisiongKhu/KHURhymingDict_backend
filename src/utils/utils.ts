@@ -122,13 +122,6 @@ export const getVowel = (str : string) => {
                     return vowelOu;
                 }else return vowel;
             }
-            if(vowel === 'ia'){
-                const indexA = str.indexOf('a');
-                console.log(`str=${str}, indexA = ${indexA}`);
-                if(indexA!==str.length-1 && (str.at(indexA+1)==='n'&&str.at(indexA+2)!=='g'||str.at(indexA+1)==='t')){
-                    return 'ie';
-                }else return vowel;
-            }
             return vowel;
         }
     }
