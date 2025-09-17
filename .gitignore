@@ -2,3 +2,5 @@
 .DS_Store
 *.log
 /node_modules
+./src/KIP_Word_organized_2.csv
+./src/Word_Failed.txt
