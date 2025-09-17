@@ -11,7 +11,7 @@ type RhymeSearchOptions = {
     IgnoreFinalSound: boolean;
     SameArticulationPart: boolean;
     SameTone: boolean;
-};
+}; 
 
 type syllableQueryParams = {
     lomaji: string;

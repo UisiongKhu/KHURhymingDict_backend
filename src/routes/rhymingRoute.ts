@@ -6,4 +6,4 @@ const router = Router();
 router.get('/syllable', syllableRhyming);
 router.get('/word', wordRhyming); // Create
 
-export default router;
+export default router; 

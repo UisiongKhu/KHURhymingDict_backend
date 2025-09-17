@@ -4,7 +4,6 @@ import cors from 'cors';
 import RhymeRoutes from './routes/rhymesRoute';
 import SyllableRoutes from './routes/syllablesRoute';
 import WordRoutes from './routes/wordRoute';
-import RhymingRoutes from './routes/rhymingRoute';
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 const app = express();
 const host = '0.0.0.0';
@@ -18,7 +17,6 @@ app.use(cors());
 app.use('/api/rhymes', RhymeRoutes);
 app.use('/api/syllables', SyllableRoutes);
 app.use('/api/words', WordRoutes);
-app.use('/api/rhyming', RhymingRoutes);
 
 app.get('/', (req, res) => {
   res.send('The server is working!');
