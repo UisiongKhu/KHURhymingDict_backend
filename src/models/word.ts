@@ -1,5 +1,10 @@
 import { Model, Optional, DataTypes, Sequelize } from 'sequelize';
 import { Syllable } from './syllable';
+import { WordSyllables, WordSyllablesAttribute } from './wordSyllables';
+
+type WordSyllablesAssociation = {
+    wordLinks?: WordSyllablesAttribute[];
+}
 
 export type WordAttribute = {
     id: number,
@@ -11,7 +16,8 @@ export type WordAttribute = {
     desc: string | null,
     createdAt?: Date, // Sequelize ē chū tōng siat tēng sî kan ê phiau kì, só͘ í ē bīn ê init m̄ bián declare, m̄ koh chia iáu sī ài pó liû.
     updatedAt?: Date,
-}
+} & WordSyllablesAssociation;
+
 
 // Tēng gī bô it tēng ài siat ê chu liāu hāng.
 export type WordCreateAttribute = Optional<WordAttribute, 'id' | 'desc' | 'createdAt' | 'updatedAt' | 'hanjiKip' | 'hanjiClj' | 'natureToneMark' >;
