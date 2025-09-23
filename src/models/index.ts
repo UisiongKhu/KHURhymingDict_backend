@@ -34,4 +34,26 @@ const db : Db = {
     WordSyllables: wordSyllablesInit(sequelize, DataTypes),
 }
 
+db.Word.hasMany(db.WordSyllables, {
+    foreignKey: 'word_id',
+    as: 'wordLinks',
+    onDelete: 'CASCADE',
+});
+
+db.WordSyllables.belongsTo(db.Word, {
+    foreignKey: 'word_id',
+    as: 'word',
+});
+
+db.Syllable.hasMany(db.WordSyllables, {
+    foreignKey: 'syllable_id',
+    as: 'syllableLinks',
+    onDelete: 'CASCADE',
+});
+
+db.WordSyllables.belongsTo(db.Syllable, {
+    foreignKey: 'syllable_id',
+    as: 'syllable',
+});
+
 export default db;
