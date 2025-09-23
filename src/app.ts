@@ -4,6 +4,8 @@ import cors from 'cors';
 import RhymeRoutes from './routes/rhymesRoute';
 import SyllableRoutes from './routes/syllablesRoute';
 import WordRoutes from './routes/wordRoute';
+import WordSyllablesRoutes from './routes/wordSyllablesRoute';
+import RhymingRoutes from './routes/rhymingRoute';
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 const app = express();
 const host = '0.0.0.0';
@@ -17,13 +19,15 @@ app.use(cors());
 app.use('/api/rhymes', RhymeRoutes);
 app.use('/api/syllables', SyllableRoutes);
 app.use('/api/words', WordRoutes);
+app.use('/api/rhyming', RhymingRoutes);
+app.use('/api/wordSyllables', WordSyllablesRoutes);
 
 app.get('/', (req, res) => {
   res.send('The server is working!');
 });
 
 const universalErrorHandler : ErrorRequestHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('有錯誤發生:', err.stack); // 佇伺服器端印出錯誤堆疊
+  console.error('有錯誤發生:', err.message,  err.stack); // 佇伺服器端印出錯誤堆疊
 }
 
 app.use(universalErrorHandler);
