@@ -1,11 +1,18 @@
 import { Model, Optional, DataTypes, Sequelize } from 'sequelize';
+import { Syllable } from './syllable';
+import { Word } from './word';
 
-type WordSyllablesAttribute = {
+type WordSyllablesAssociation = {
+    syllable?: Syllable;
+    word?: Word;
+}
+
+export type WordSyllablesAttribute = {
     id: number,
     wordId: number,
     syllableId: number,
     order: number,
-}
+} & WordSyllablesAssociation;
 
 // Tēng gī bô it tēng ài siat ê chu liāu hāng.
 type WordSyllablesCreateAttribute = Optional<WordSyllablesAttribute, 'id'>;
@@ -13,8 +20,8 @@ type WordSyllablesCreateAttribute = Optional<WordSyllablesAttribute, 'id'>;
 // Tēng gī model ê attribute
 export class WordSyllables extends Model<WordSyllablesAttribute, WordSyllablesCreateAttribute>{
     declare id : number;
-    declare word_id : number;
-    declare syllable_id : number;
+    declare wordId : number;
+    declare syllableId : number;
     declare order : number;
 }
 
@@ -45,7 +52,9 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof WordS
         },
     },{
         sequelize,
-        tableName: 'wordSyllables',
+        tableName: 'WordSyllables',
+        freezeTableName: true,
+        modelName: 'WordSyllables',
         timestamps: false,
         indexes: [
             {

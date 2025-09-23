@@ -92,14 +92,14 @@ export const getSyllableIdsByWordId = async (req: Request, res: Response, next: 
             res.status(400).json({ message: 'wordId is required', successful: false } );
         }
 
-        const syllableEntries = await db.WordSyllables.findAll({
+        const wordSyllableData = await db.WordSyllables.findAll({
             where: { wordId: Number(wordId) },
             order: [['order', 'ASC']],
         });
 
-        const syllableIds = syllableEntries.map(entry => entry.syllable_id);
+        const syllableIds = wordSyllableData.map(ws => ws.syllableId);
         
-         res.status(200).json({ syllableIds, successful: true });
+        res.status(200).json({ syllableIds, successful: true });
     } catch (error) {
         next(error);
     }
