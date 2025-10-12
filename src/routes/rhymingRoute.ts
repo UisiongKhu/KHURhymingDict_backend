@@ -1,9 +1,9 @@
 import { Router} from "express";
-import { syllableRhyming, wordRhymingByInput } from "../controllers/rhymingController";
+import { syllableRhyming, wordRhymingByWord } from "../controllers/rhymingController";
 
 const router = Router();
 
 router.get('/syllable', syllableRhyming);
-router.get('/word', wordRhymingByInput); // Create
+router.get('/word', wordRhymingByWord); // Create
 
 export default router; 

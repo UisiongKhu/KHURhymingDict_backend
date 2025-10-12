@@ -615,17 +615,14 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
                 res.status(400).json({ message: 'rhymingSyllableCount must be less than the length of the keyword.', successful: false });
                 return;
             }
-        }else{
-            res.status(400).json({ message: 'lomaji is required.', successful: false });
-            return;
         }
         if(typeof hanjiKip === 'string' && hanjiKip){
             whereCondition.hanjiKip = hanjiKip;
-        }else{
-            res.status(400).json({ message: 'hanjiKip is required.', successful: false });
+        }
+        if(lomaji === undefined && hanjiKip === undefined){
+            res.status(400).json({message: 'lomaji or hanjiKip is required.', successuful: true});
             return;
         }
-
         /**
          * Ah ūn soeh bêng
          * 
@@ -779,7 +776,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
 
         const finalRhymingWordsId = candidateWordIds.filter(id=> id !== keyword.id);
         const finalRhymingWords = await db.Word.findAll({
-            attributes: ['id', 'lomaji', 'hanjiKip'],
+            attributes: ['lomaji', 'hanjiKip'],
             where: {
                 id: {
                     [Op.in]: finalRhymingWordsId
