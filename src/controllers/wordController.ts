@@ -40,6 +40,51 @@ export const getWord = async (req : Request, res : Response, next : NextFunction
     }
 };
 
+export const getWordWithSyllables = async (req : Request, res : Response, next : NextFunction ) => {
+    try {
+        const {id, lomaji, hanjiKip, hanjiClj, syllableIds, natureToneMark, desc} = req.query;
+        const whereCondition : {[key : string] : any} = {};
+        if(typeof id === 'string' && id) whereCondition.id = id;
+        if(typeof lomaji === 'string' && lomaji) whereCondition.lomaji = lomaji;
+        if(typeof hanjiKip === 'string' && hanjiKip) whereCondition.hanjiKip = hanjiKip;
+        if(typeof hanjiClj === 'string' && hanjiClj) whereCondition.hanjiClj = hanjiClj;
+        if(typeof natureToneMark === 'string' && natureToneMark) whereCondition.natureToneMark = natureToneMark;
+        if(typeof desc === 'string' && desc) whereCondition.desc = desc;
+
+        if(typeof syllableIds === 'string' && syllableIds) whereCondition.syllableIds = syllableIds;
+        
+        console.log(whereCondition);
+        const word = await db.Word.findOne({
+            where: {...whereCondition},
+            attributes: ['id', 'lomaji', 'hanjiKip'],
+            include: [{
+                model: db.WordSyllables,
+                as: 'wordLinks',
+                attributes: ['order'],
+                include: [{
+                    model: db.Syllable,
+                    as: 'syllable',
+                    attributes: ['id', 'lomaji', 'hanjiKip', 'vowel', 'coda', 'tone'],
+                }],
+            }],
+            order: [[{model: db.WordSyllables, as: 'wordLinks'}, 'order', 'ASC']],
+        });
+        if(!word) {
+            res.status(404).json({
+                message: 'Chhōe bô lí beh ài ê sû lūi. / No word founded.',
+                successful: false,
+            });
+            return;
+        }else{
+            res.status(200).json(word.toJSON());
+            return;
+        }
+    } catch (error) {
+        console.error('The̍h Word lia̍t toaⁿ ê sî chūn tn̄g tio̍h būn tê: ', error);
+        next(error);
+    }
+};
+
 export const addWord = async (req : Request, res : Response, next : NextFunction) => {
     const transaction = await db.sequelize.transaction();
     try {
