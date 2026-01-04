@@ -8,6 +8,7 @@ import { Op } from 'sequelize';
 import { Fn } from 'sequelize/types/utils';
 import sequelize from 'sequelize';
 import { Syllable } from '../models/syllable';
+import { Statistics } from '../models/statistics';
 
 type RhymeSearchOptions = {
     IgnoreNasalSound: boolean;
@@ -623,6 +624,8 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             res.status(400).json({message: 'lomaji or hanjiKip is required.', successuful: true});
             return;
         }
+
+        await Statistics.increment('value', { by: 1, where: { key: 'search_counter' } });
         /**
          * Ah ūn soeh bêng
          * 
