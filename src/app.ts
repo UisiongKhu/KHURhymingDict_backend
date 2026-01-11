@@ -8,6 +8,7 @@ import WordSyllablesRoutes from './routes/wordSyllablesRoute';
 import RhymingRoutes from './routes/rhymingRoute';
 import StatisticsRoutes from './routes/statisticsRoute';
 import VisitorLogRoutes from './routes/visitorLogRoute';
+import AnnouncementRoutes from './routes/announcementRoute';
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 const app = express();
 const host = '0.0.0.0';
@@ -25,6 +26,7 @@ app.use('/api/rhyming', RhymingRoutes);
 app.use('/api/wordSyllables', WordSyllablesRoutes);
 app.use('/api/statistics', StatisticsRoutes);
 app.use('/api/visitorLog', VisitorLogRoutes);
+app.use('/api/announcement', AnnouncementRoutes);
 
 app.get('/', (req, res) => {
   res.send('The server is working!');
