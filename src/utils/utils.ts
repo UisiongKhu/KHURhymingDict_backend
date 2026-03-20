@@ -4,10 +4,10 @@
  * @description KHURHymingDict ê āu tâi só͘ su iàu ê li li khok khok ê function lóng tī chia.
  */
 
-const codaList = ['ng', 'p', 't', 'k', 'h', 'm', 'n'];
-const checkedToneCodaList = ['p','t','k','h'];
-const vowelList = ['iau', 'oai', 'ai', 'au', 'ia', 'iu', 'io', 'oa', 'oe', 'ui', 'a', 'i', 'u', 'o͘', 'e', 'o'];
-const consonantList = ['chh','ch','ph','th','kh','ng','p','t','k','b','l','g','m','n','j','s','h']
+export const codaList = ['ng', 'p', 't', 'k', 'h', 'm', 'n'];
+export const checkedToneCodaList = ['p','t','k','h'];
+export const vowelList = ['iau', 'oai', 'ai', 'au', 'ia', 'iu', 'io', 'oa', 'oe', 'ui', 'a', 'i', 'u', 'o͘', 'e', 'o'];
+export const consonantList = ['chh','ch','ph','th','kh','ng','p','t','k','b','l','g','m','n','j','s','h']
 const toneMarkList = ['','\u0301','\u0300','','\u0302','','\u0304','\u030D','\u0306'];
 const tonedLetters = {
     a: ['a','á','à','a','â','ǎ','ā','a̍','ă'],

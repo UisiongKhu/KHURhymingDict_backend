@@ -23,6 +23,7 @@ export const importOrderFromSyllableIdsField : RequestHandler = async (req: Requ
                         wordId: word.id,
                         syllableId: syllableId,
                         order: j, // 0-based index
+                        revOrder: syllableIdArr.length - j, // Reverse order (1-based index)
                     }
                 });
                 if (existingEntry) {
@@ -32,6 +33,7 @@ export const importOrderFromSyllableIdsField : RequestHandler = async (req: Requ
                     wordId: word.id,
                     syllableId: syllableId,
                     order: j, // 0-based index
+                    revOrder: syllableIdArr.length - j, // Reverse order (1-based index)
                 });
             }
         }
@@ -43,12 +45,15 @@ export const importOrderFromSyllableIdsField : RequestHandler = async (req: Requ
 
 export const addWordSyllable : RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { wordId, syllableId, order } = req.body;
-        if (!wordId || !syllableId || order === undefined) {
-            res.status(400).json({ message: 'wordId, syllableId and order are required', successful: false } );
+        const { wordId, syllableId, order, revOrder } = req.body;
+        if (!wordId || !syllableId || order === undefined || revOrder === undefined) {
+            res.status(400).json({ message: 'wordId, syllableId, order and revOrder are required', successful: false } );
         }
         if( isNaN(Number(order)) || Number(order) < 1 ) {
             res.status(400).json({ message: 'order must be a positive integer', successful: false } );
+        }
+        if( isNaN(Number(revOrder)) || Number(revOrder) < 1 ) {
+            res.status(400).json({ message: 'revOrder must be a positive integer', successful: false } );
         }
         if( isNaN(Number(wordId)) || isNaN(Number(syllableId)) ) {
             res.status(400).json({ message: 'wordId and syllableId must be integers', successful: false } );
@@ -78,6 +83,7 @@ export const addWordSyllable : RequestHandler = async (req: Request, res: Respon
             wordId: Number(wordId),
             syllableId: Number(syllableId),
             order: Number(order),
+            revOrder: Number(order), // 1-based index for reverse order
         });
         res.status(201).json({ message: 'WordSyllable added successfully', entry: newEntry, successful: true });
     } catch (error) {

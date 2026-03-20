@@ -2,8 +2,8 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import db from '../models';
 import { isDataView, isFloat16Array } from 'util/types';
 import rhyme, { Rhyme } from '../models/rhyme';
-import { Model, where } from 'sequelize';
-import { getCoda, getLomajiArr, getNasal, getTone, getVowel } from '../utils/utils';
+import { Model, QueryTypes, Utils, where } from 'sequelize';
+import { codaList, getCoda, getLomajiArr, getNasal, getTone, getVowel } from '../utils/utils';
 import { Op } from 'sequelize';
 import { Fn } from 'sequelize/types/utils';
 import sequelize from 'sequelize';
@@ -35,6 +35,88 @@ type wordQueryParams = {
     limit?: number;
     page?: number;
 };
+
+const SimilarVowels : {[key: string]: string[]} = {
+    'iau': ['iau', 'au'],
+    'oai': ['oai', 'ai'],
+    'ai':  ['oai', 'ai'],
+    'au':  ['iau', 'au'],
+    'ia':  ['ia', 'a'],
+    'io͘': ['io͘', 'o͘'],
+    'io':  ['io', 'o'],
+    'oa':  ['oa', 'a'],
+    'oe':  ['oe', 'e'],
+    'ui':  ['ui', 'i'],
+    'a':   ['a', 'ia', 'oa'],
+    'i':   ['i', 'ui'],
+    'e':   ['e', 'oe'],
+    'o':   ['o', 'io'],
+    'o͘':  ['o͘', 'io͘']
+}
+
+const SameArituculationPartCodas : {[key: string]: any[]} = {
+    'p': ['p', 'm'],
+    'm': ['p', 'm'],
+    't': ['t', 'n'],
+    'n': ['t', 'n'],
+    'k': ['k', 'ng'],
+    'ng': ['k', 'ng'],
+    'h': ['h', null],
+}
+
+const getRhymingCondition = (index: number, rhymingTarget: syllableQueryParams, options: RhymeSearchOptions) => {
+    const toneStr = options.SameTone ? `` : ` AND s.tone = '${rhymingTarget.tone}' `;
+    const vowelStr = options.SimilarVowel ? ` AND s.vowel IN (${SimilarVowels[rhymingTarget.vowel]?.map((v) => `'${v}'`).join(', ')})` : ` AND s.vowel = '${rhymingTarget.vowel}' `;
+    const nasalStr = options.IgnoreNasalSound ? `` : ` AND s.nasal = '${rhymingTarget.nasal?1:0}' `;
+    let codaStr = ``;
+    // 若是「無欲忽略尾音」才入來遮判斷
+    if (!options.IgnoreFinalSound) {
+        // 針對韻母是 'e' 個特殊處理 (台語個 'e' 配合無仝尾音，發音部位會變)
+        if (rhymingTarget.vowel === 'e') {
+            // 若是 "ek" 或者是 "eng" 個時陣 (舌根音)
+            if (rhymingTarget.coda === 'k' || rhymingTarget.coda === 'ng') {
+                if (options.SameArticulationPart) {
+                    // 同部位發音：'k' 參 'ng' 算做一組 (攏是舌根音)
+                    codaStr = ` AND s.coda IN ('k', 'ng') `;
+                } else {
+                    // 精確比對：原本是 'k' 就揣 'k'，是 'ng' 就揣 'ng'
+                    codaStr = ` AND s.coda = '${rhymingTarget.coda}' `;
+                }
+            } 
+            // 若是開口呼 "e" 或者是喉簇音 "eh" 個時陣
+            else if (!rhymingTarget.coda || rhymingTarget.coda === 'h') {
+                if (options.SameArticulationPart) {
+                    // 同部位發音：無尾音 (NULL) 參入聲喉塞音 ('h') 算做一組
+                    codaStr = ` AND (s.coda IS NULL OR s.coda = 'h') `; 
+                } else {
+                    // 精確比對：無尾音就揣 NULL，有 'h' 就揣 'h'
+                    codaStr = rhymingTarget.coda ? ` AND s.coda = 'h' ` : ` AND s.coda IS NULL `;
+                }
+            } 
+            else {
+                // 其他 'e' 結尾個情況 (基本比對)
+                codaStr = ` AND s.coda = '${rhymingTarget.coda}' `;
+            }
+        } 
+        // 韻母毋是 'e' 個一般情況
+        else {
+            if (options.SameArticulationPart) {
+                // 一般韻母個「同部位發音」：無尾音參 'h' 先處理
+                if (!rhymingTarget.coda || rhymingTarget.coda === 'h') {
+                    codaStr = ` AND (s.coda IS NULL OR s.coda = 'h') `;
+                } else {
+                    // 照發音部位對照表 (譬如 m/p, n/t, ng/k) 來揣
+                    const arts = SameArituculationPartCodas[rhymingTarget.coda] || [rhymingTarget.coda];
+                    codaStr = ` AND s.coda IN (${arts.map((c) => `'${c}'`).join(', ')}) `;
+                }
+            } else {
+                // 一般精確比對：無尾音揣 NULL，有尾音揣原值
+                codaStr = rhymingTarget.coda ? ` AND s.coda = '${rhymingTarget.coda}' ` : ` AND s.coda IS NULL `;
+            }
+        }
+    }
+    return `(ws.rev_order = ${index+1}` + toneStr + vowelStr + nasalStr + codaStr+`)`;
+}
 
 const rhyming = async (params: syllableQueryParams, opts: RhymeSearchOptions) => {
     const {lomaji, vowel, coda, nasal, tone, limit, page} = params;
@@ -102,17 +184,17 @@ const rhyming = async (params: syllableQueryParams, opts: RhymeSearchOptions) =>
     } 
     if(typeof coda ==='string' && coda){
         if(vowel==='e'){
-            if(coda==='k' || coda==='ng'){
-                if(!opts.IgnoreFinalSound) whereCondition.coda = coda;
-                else whereCondition.coda = ['k','ng'];
+            if(coda==='k' || coda==='ng'){ // "eng", "ek" ê sî chūn
+                if(!opts.IgnoreFinalSound) whereCondition.coda = coda; // Nā bô bû sī coda, tio̍h ài thai coda.
+                else whereCondition.coda = ['k','ng']; // Nā ū bû sī coda, kan ta hān tī "eng", "ek" chi kan, in ūi "eh", "e" ê "e" kiau "eng", "ek" ê "e" bô kâng im.
             }
         }else{
-            if(!opts.IgnoreFinalSound){
+            if(!opts.IgnoreFinalSound){ // Nā bô bû sī chiah ū ē bīn ê būn tê
                 if(opts.SameArticulationPart){
                     if(coda==='p' || coda==='m'){
                             whereCondition.coda = ['p','m'];
                     }else if(coda==='t' || coda==='n'){
-                        whereCondition.coda = ['t','n','l'];
+                        whereCondition.coda = ['t','n'];
                     }else if(coda==='k' || coda==='ng'){
                         whereCondition.coda = ['k','ng'];
                     }else if(coda==='h'){
@@ -122,6 +204,7 @@ const rhyming = async (params: syllableQueryParams, opts: RhymeSearchOptions) =>
                     whereCondition.coda = coda;
                 }
             }
+            // Nā ū bû sī tio̍h kā lóng chóng ê kiat kó show chhut lâi.
         }
     }else if(coda==='' || coda===null || coda===undefined){
         whereCondition.coda = {[Op.is]: null};
@@ -575,7 +658,7 @@ export const wordRhymingByInput = async (req: Request, res: Response, next: Next
     }
 };
 
-export const wordRhymingByWord = async (req: Request, res: Response, next: NextFunction) => {
+export const wordRhymingByWordLegacy = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const {lomaji, hanjiKip, limit, page, rhymingSyllableCount, ignoreNasalSound, similarVowel, ignoreFinalSound, sameArticulationPart, sameTone} = req.query;
 
@@ -806,6 +889,131 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
 
         }else{
             res.status(404).json({ message: 'No matching word found.', successful: false });
+        }
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const wordRhymingByWord = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {lomaji, hanjiKip, limit, page, rhymingSyllableCount, ignoreNasalSound, similarVowel, ignoreFinalSound, sameArticulationPart, sameTone} = req.query;
+
+        // Deal with rhyming options
+        let opts : RhymeSearchOptions = {
+            IgnoreNasalSound: false,
+            SimilarVowel: false,
+            IgnoreFinalSound: false,
+            SameArticulationPart: false,
+            SameTone: false,
+        };
+        if(typeof ignoreNasalSound === 'string' && ignoreNasalSound.toLowerCase()==='true'){
+            opts.IgnoreNasalSound = true;
+        }
+        if(typeof similarVowel === 'string' && similarVowel.toLowerCase()==='true'){
+            opts.SimilarVowel = true;
+        }
+        if(typeof ignoreFinalSound === 'string' && ignoreFinalSound.toLowerCase()==='true'){
+            opts.IgnoreFinalSound = true;
+        }
+        if(typeof sameArticulationPart === 'string' && sameArticulationPart.toLowerCase()==='true'){
+            opts.SameArticulationPart = true;
+        }
+        if(typeof sameTone === 'string' && sameTone.toLowerCase()==='true'){
+            opts.SameTone = true;
+        }
+
+        if(rhymingSyllableCount===undefined || isNaN(Number(rhymingSyllableCount)) || Number(rhymingSyllableCount)<1){
+            res.status(400).json({ message: 'rhymingSyllableCount is required and must be a positive integer.', successful: false });
+            return;
+        }
+
+        const whereCondition: {[key: string]: any} = {};
+        // syllableIds is a VARCHAR-type string of comma-separated syllable IDs like "[1,2,3]" means the word contains syllables with IDs 1, 2, and 3 in order.
+        if(typeof lomaji === 'string' && lomaji){
+            whereCondition.lomaji = lomaji;
+            if(Number(rhymingSyllableCount) > getLomajiArr(lomaji).length){
+                res.status(400).json({ message: 'rhymingSyllableCount must be less than the length of the keyword.', successful: false });
+                return;
+            }
+        }
+        if(typeof hanjiKip === 'string' && hanjiKip){
+            whereCondition.hanjiKip = hanjiKip;
+        }
+        if(lomaji === undefined && hanjiKip === undefined){
+            res.status(400).json({message: 'lomaji or hanjiKip is required.', successuful: true});
+            return;
+        }
+
+        await Statistics.increment('value', { by: 1, where: { key: 'search_counter' } });
+        /**
+         * Ah ūn soeh bêng
+         * 
+         * Tē 1 pō͘. Lia̍h ūn kha
+         * Seng ū ūn kha ê array.
+         * Tē 2 pō͘. Iōng ūn kha chhōe LÓNG CHÓNG ê ah ūn jī
+         * Tē 3 pō͘. Ùi jī chhōe kāng chhù sū ê sû
+         * 
+         * Nā ū beh ah 2, 3, ... jī, chiah ēng tē 3 pō͘ chhōe tio̍h ê chu liāu koh tiông ho̍k tē 2, 3 pō͘ ê tōng chok.
+         */
+
+        // Lia̍h ūn kha ê array
+        const keyword = await db.Word.findOne({
+            where: {
+                ...whereCondition,
+            },
+            include: [
+                {
+                    model: db.WordSyllables,
+                    as: 'wordLinks',
+                    attributes: ['syllableId', 'order'],
+                    include: [
+                        {
+                            model: db.Syllable,
+                            as: 'syllable',
+                            attributes: ['lomaji', 'hanjiKip', 'vowel', 'coda', 'nasal', 'tone'],
+                        }
+                    ],
+                },
+            ],
+            order: [[{ model: db.WordSyllables, as: 'wordLinks' }, 'order', 'ASC']],
+        });
+
+        if(!keyword){
+            res.status(404).json({ message: 'No matching word found.', successful: false });
+            return;
+        }
+
+        const syllables = keyword?.toJSON().wordLinks?.map(wordLinkData => wordLinkData.syllable);
+        console.log(syllables);
+        let conditionString = ``;
+        for(let i=0; i<Number(rhymingSyllableCount); i++){
+            if(i>0) conditionString += ` OR `;
+            conditionString += getRhymingCondition(i, (syllables!.at(syllables!.length-i-1))!, opts);
+        }
+        const query = `
+            SELECT w.lomaji, w.hanji_kip AS hanjiKip FROM words AS w
+            INNER JOIN WordSyllables AS ws ON w.id = ws.word_id
+            INNER JOIN syllables AS s ON ws.syllable_id = s.id
+            WHERE w.id != ${keyword.id} AND ${conditionString}
+            GROUP BY w.id
+            HAVING COUNT(*) = ${rhymingSyllableCount};
+        `;
+        interface RhymeResult {
+            lomaji: string;
+            hanjiKip: string;
+        }
+        const results = await db.sequelize.query<RhymeResult>(query, {
+            type: QueryTypes.SELECT,
+            raw: true,
+        });
+        console.log(results);
+
+        if(!results){
+            res.status(200).json({ message: 'No rhyming words found matching the criteria.', successful: true, data: [] });
+        }else{
+            res.status(200).json({ successful: true, count: results.length,  data: results });
         }
 
     } catch (error) {

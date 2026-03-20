@@ -12,6 +12,7 @@ export type WordSyllablesAttribute = {
     wordId: number,
     syllableId: number,
     order: number,
+    revOrder: number,
 } & WordSyllablesAssociation;
 
 // Tēng gī bô it tēng ài siat ê chu liāu hāng.
@@ -23,6 +24,7 @@ export class WordSyllables extends Model<WordSyllablesAttribute, WordSyllablesCr
     declare wordId : number;
     declare syllableId : number;
     declare order : number;
+    declare revOrder : number;
 }
 
 // Model Initialization
@@ -50,6 +52,11 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof WordS
             type: dataTypes.INTEGER.UNSIGNED,
             allowNull: false,
         },
+        revOrder: {
+            type: dataTypes.INTEGER.UNSIGNED,
+            allowNull: false,
+            field: 'rev_order',
+        }
     },{
         sequelize,
         tableName: 'WordSyllables',
@@ -61,7 +68,16 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes): typeof WordS
                 unique: true,
                 fields: ['word_id', 'order'],
                 name: 'uq_word_order',
+            },
+            {
+                name: 'idx_syllable_id',
+                fields: ['syllable_id'],
+            },
+            {
+                name: 'idx_rev_rhyme',
+                fields: ['rev_order', 'syllable_id'],
             }
+
         ],
         charset: 'utf8mb4',
         collate: 'utf8mb4_bin',
