@@ -8,6 +8,8 @@ import wordSyllablesInit, { WordSyllables } from './wordSyllables';
 import statisticsInit, { Statistics } from './statistics';
 import visitorLogInit, { VisitorLog } from './visitorLog';
 import announcementInit, { Announcement } from './announcement';
+import userInit, { User } from './user';
+import tokenInit, { Token } from './token';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
@@ -29,6 +31,8 @@ export interface Db {
     Statistics: typeof Statistics;
     VisitorLog: typeof VisitorLog; 
     Announcement: typeof Announcement;
+    User: typeof User;
+    Token: typeof Token;
 }
 
 const db : Db = {
@@ -41,6 +45,8 @@ const db : Db = {
     Statistics: statisticsInit(sequelize, DataTypes),
     VisitorLog: visitorLogInit(sequelize, DataTypes),
     Announcement: announcementInit(sequelize, DataTypes),
+    User: userInit(sequelize, DataTypes),
+    Token: tokenInit(sequelize, DataTypes),
 }
 
 db.Word.hasMany(db.WordSyllables, {
