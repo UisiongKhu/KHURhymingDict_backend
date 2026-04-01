@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 type UserAttribute = {
     id: number,
     type: number, // 0: normal user, 1: administrator
-    status: number, // 0: normal, 1: muted, 2: banned, 3: deleted
+    status: number, // 0: normal, 1: muted, 2: banned, 3: deleted, 4: not verified
     email: string,
     password: string,
     profilePic: string | null,

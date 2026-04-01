@@ -16,37 +16,72 @@ export const UserRegistration = async (req: Request, res: Response, next: NextFu
     const transaction = await db.sequelize.transaction();
     try {
         if(!req.body.email || !req.body.password || !req.body.nickname){
-            res.status(400).json({ message: 'Email, password and nickname are required.' });
+            res.status(400).json({ message: 'lack_of_field' });
+            await transaction.rollback();
             return;
+        }
+        if(req.body.password.length < 8){
+            res.status(400).json({ message: 'password_length_error' });
+            await transaction.rollback();
+            return;
+        }
+        if(req.body.nickname.length < 2 || req.body.nickname.length > 32){
+            res.status(400).json({ message: 'nickname_length_error' });
+            await transaction.rollback();
+            return;
+        }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email)){
+            res.status(400).json({ message: 'email_format_error' });
+            await transaction.rollback();
+            return;
+        }else{
+            const existingUser = await db.User.findOne({ where: { email: req.body.email } });
+            if(existingUser){
+                res.status(400).json({ message: 'email_exists_error' });
+                await transaction.rollback();
+                return;
+            }
         }
         const reqBodyUser : UserCreationAttribute = {
             email: req.body.email,
             password: req.body.password,
             nickname: req.body.nickname,
-            status: 0, // default to active status
+            status: 4, // Not verified when registered, can be changed to 0 by admin after manual verification.
         };
         const user = await db.User.create(reqBodyUser, { transaction });
-        const {password, ...userData} = user.toJSON(); // Exclude password from response
-        res.status(201).json({ message: 'User registered successfully', user: userData });
+        const {password, type, status, id, mutedTo, ...userData} = user.toJSON(); // Exclude password from response
+        res.status(201).json({ message: 'registration_successfully', user: userData });
         await transaction.commit();
     } catch (err) {
         await transaction.rollback();
-        res.status(500).json({ message: 'User registration failed due to an error', error: (err as Error).message });        
+        res.status(500).json({ message: 'registration_failed', error: (err as Error).message });        
     }
 };
 
 export const userLogin = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
     try {
         const { email, password } = req.body;
         const user = await db.User.findOne({ where: {email} });
         if(!user){
-            res.status(401).json({message: 'Wrong email or password.'});
+            res.status(401).json({message: 'wrong_information'});
+            await transaction.rollback();
             return;
         }else{
             // Compare the provided password with the password from DB
             const isMatch = await bcrypt.compare(password, user.password);
             if(!isMatch){
-                res.status(401).json({message: 'Wrong email or password.'});
+                res.status(401).json({message: 'wrong_information'});
+                await transaction.rollback();
+                return;
+                return;
+            }else if(user.status === 2){
+                res.status(403).json({message: 'user_banned'});
+                await transaction.rollback();
+                return;
+            }else if(user.status === 4){
+                res.status(403).json({message: 'user_not_verified'});
+                await transaction.rollback();
                 return;
             }else{
                 // Login successful, generate JWT token
@@ -62,11 +97,13 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                     expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours expiration
                 });
                 await db.User.update({ lastLoginAt: new Date() }, { where: { id: user.id } }); // Update last login time
-                res.status(200).json({message: 'Login successful', token});
+                res.status(200).json({message: 'login_successfully', token});
+                await transaction.commit();
             }
         }
     } catch (err) {
-        res.status(500).json({ message: 'User login failed due to an error', error: (err as Error).message });
+        await transaction.rollback();
+        res.status(500).json({ message: 'user_login_failed', error: (err as Error).message });
     }
 };
 
@@ -155,27 +192,103 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const muteUser = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
     try {
         const user = await db.User.findByPk(req.params.id);
         const mutedTo = req.body.mutedTo as string; // Get the mutedTo value from request body
         if(!user){
             res.status(404).json({message: 'User not found.'});
+            await transaction.rollback();
             return;
         }
         if(mutedTo !== undefined && mutedTo !== null){
             if(isNaN(Date.parse(mutedTo))){
                 res.status(400).json({message: 'Invalid mutedTo value. It should be a valid date string.'});
+                await transaction.rollback();
                 return;
             }else{
-                user.mutedTo = new Date(mutedTo);
+                const dMutedTo = new Date(mutedTo);
+                if(dMutedTo > new Date()){
+                    user.status = 1; // Set status to muted if mutedTo is in the future
+                    user.mutedTo = dMutedTo;
+                }else{
+                    user.status = 0; // Set status to active if mutedTo is in the past
+                    user.mutedTo = null;
+                }
             }
         }else{
             res.status(400).json({message: 'mutedTo value is required.'});
             return;
         }
         await user.save();
+        await transaction.commit();
         res.status(200).json({message: 'User muted successfully.'});
     } catch (e) {
+        await transaction.rollback();
        next(e);
     }
-}
+};
+
+export const acceptUser = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const user = await db.User.findByPk(req.params.id);
+        if(!user){
+            res.status(404).json({message: 'User not found.'});
+            await transaction.rollback();
+            return;
+        }else if(user.status === 4){ // Only accept users with status 4 (not verified)
+            user.status = 0; // Change status to active
+            await user.save();
+            res.status(200).json({message: 'User accepted successfully.'});
+            await transaction.commit();
+            return;
+        }else{
+            res.status(400).json({message: 'Only users with status "not verified" can be accepted.'});
+            await transaction.rollback();
+            return;
+        }
+    } catch (e) {
+        await transaction.rollback();
+        next(e);
+    }
+};
+
+export const banUser = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const user = await db.User.findByPk(req.params.id);
+        const operation = req.body.operation as string; // Get the operation value from request body
+        if(operation !== 'ban' && operation !== 'unban'){
+            res.status(400).json({message: 'Invalid operation. It should be either "ban" or "unban".'});
+            await transaction.rollback();
+            return;
+        }
+        if(!user){
+            res.status(404).json({message: 'User not found.'});
+            await transaction.rollback();
+            return;
+        }else{
+            if(operation === 'ban'){
+                user.status = 2; // Set status to banned
+            }else{
+                if(user.mutedTo && isNaN(Date.parse(user.mutedTo.toString()))){
+                    if(new Date(user.mutedTo) > new Date()){
+                        user.status = 1; // Set status to muted if mutedTo is in the future
+                    }else{
+                        user.status = 0; // Set status to active if mutedTo is in the past
+                    }
+                }else{
+                    user.status = 0; // Set status to active if mutedTo is not set
+                }
+            }
+            await user.save();
+            res.status(200).json({message: 'User updated successfully.'});
+            await transaction.commit();
+            return;
+        }
+    } catch (e) {
+        await transaction.rollback();
+        next(e);
+    }
+};
