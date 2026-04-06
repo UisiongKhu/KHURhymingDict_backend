@@ -6,6 +6,7 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { Announcement, AnnouncementCreationAttribute } from '../models/announcement';
+import db from '../models';
 
 export const createAnnouncement = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -82,17 +83,26 @@ export const updateAnnouncement = async (req: Request, res: Response, next: Next
 
 
 export const deleteAnnouncement = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
     try {
         const announcementId = parseInt(req.params.id, 10);
+        if(isNaN(announcementId)) {
+            await transaction.rollback();
+            res.status(400).json({ message: 'Invalid announcement ID' });
+            return;
+        }
         const announcement = await Announcement.findOne({ where: { id: announcementId, isDeleted: false } });
         if (!announcement) {
+            await transaction.rollback();
             res.status(404).json({ message: 'Announcement not found' });
             return;
         }
         announcement.isDeleted = true;
         await announcement.save();
+        await transaction.commit();
         res.status(200).json({ message: 'Announcement deleted successfully' });
     } catch (e) {
+        await transaction.rollback();
         next(e);
     }
 };
