@@ -13,7 +13,7 @@ export const createAnnouncement = async (req: Request, res: Response, next: Next
         const { title, content } = req.body;
         if(!req.body){
             res.status(400).json({ message: 'Request body is missing' });
-            return
+            return;
         }
         const newAnnouncementData : AnnouncementCreationAttribute = {
             title: title,
