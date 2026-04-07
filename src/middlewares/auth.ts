@@ -23,7 +23,6 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         }
         (req as any).user = decoded;
         console.log('Authenticated user:', decoded);
-        res.status(200).json({ message: 'User authenticated', user: { email: (decoded as any).email, nickname: (decoded as any).nickname } });
         next();
     } catch (e) {
         res.status(403).json({ message: 'Invalid or expired token. Please log in again.' });
@@ -58,7 +57,6 @@ export const adminMiddleware = async (req: Request, res: Response, next: NextFun
         }
         (req as any).user = decoded;
         console.log('Admin user:', decoded);
-        res.status(200).json({ message: 'Admin authenticated', user: { email: user.email, nickname: user.nickname } });
         next();
     } catch (e) {
         res.status(403).json({ message: 'Invalid or expired token. Please log in again.' });
