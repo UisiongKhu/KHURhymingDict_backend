@@ -191,10 +191,20 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     }
 };
 
+/**
+ * @description To unmute an user, set mutedTo to a past date or null. To mute an user, set mutedTo to a future date. The status will be automatically updated based on the mutedTo value.
+ */
 export const muteUser = async (req: Request, res: Response, next: NextFunction) => {
     const transaction = await db.sequelize.transaction();
     try {
-        const user = await db.User.findByPk(req.params.id);
+        const userId = req.params.id;
+        const iUserId = parseInt(userId);
+        if(isNaN(iUserId)){
+            res.status(400).json({message: 'Invalid user ID.'});
+            await transaction.rollback();
+            return;
+        }
+        const user = await db.User.findByPk(iUserId);
         const mutedTo = req.body.mutedTo as string; // Get the mutedTo value from request body
         if(!user){
             res.status(404).json({message: 'User not found.'});
@@ -254,6 +264,9 @@ export const acceptUser = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+/**
+ * @description To unban an user set operation to 'unban'. To ban an user, set operation to 'ban'. When banning an user, the status will be set to 2. When unbanning an user, the status will be set to 0 if mutedTo is not set or in the past, or 1 if mutedTo is in the future.
+ */
 export const banUser = async (req: Request, res: Response, next: NextFunction) => {
     const transaction = await db.sequelize.transaction();
     try {
