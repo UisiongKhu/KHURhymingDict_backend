@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptUser, banUser, checkUser, getUser, getUsers, muteUser, userLogin, userLogout, UserRegistration } from "../controllers/userController";
+import { acceptUser, banUser, checkTokenExistence, checkUser, getUser, getUsers, muteUser, updateUserDesc, userLogin, userLogout, UserRegistration, userTokenReset } from "../controllers/userController";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -14,6 +14,9 @@ router.get('/:id', adminMiddleware, getUser);
 router.put('/mute/:id', adminMiddleware, muteUser);
 router.put('/accept/:id', adminMiddleware, acceptUser);
 router.put('/ban/:id', adminMiddleware, banUser);
+router.put('/desc/:id', adminMiddleware, updateUserDesc);
+router.delete('/tokenReset/:id', adminMiddleware, userTokenReset);
+router.get('/token/:id', adminMiddleware, checkTokenExistence);
 
 
 export default router;

@@ -270,6 +270,12 @@ export const acceptUser = async (req: Request, res: Response, next: NextFunction
 export const banUser = async (req: Request, res: Response, next: NextFunction) => {
     const transaction = await db.sequelize.transaction();
     try {
+        const userId = req.params.id;
+        if(isNaN(parseInt(userId))){
+            res.status(400).json({message: 'Invalid user ID.'});
+            await transaction.rollback();
+            return;
+        }
         const user = await db.User.findByPk(req.params.id);
         const operation = req.body.operation as string; // Get the operation value from request body
         if(operation !== 'ban' && operation !== 'unban'){
@@ -305,3 +311,75 @@ export const banUser = async (req: Request, res: Response, next: NextFunction) =
         next(e);
     }
 };
+
+export const userTokenReset = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const id = req.params.id;
+        if(isNaN(parseInt(id))){
+            res.status(400).json({message: 'Invalid user ID.'});
+            await transaction.rollback();
+            return;
+        }
+        const user = await db.User.findByPk(req.params.id);
+        if(!user){
+            res.status(404).json({message: 'User not found.'});
+            await transaction.rollback();
+            return;
+        }else{
+            await db.Token.destroy({ where: { userId: user.id } }); // Remove all tokens associated with the user to force logout
+            res.status(200).json({message: 'User tokens reset successfully.'});
+            await transaction.commit();
+            return;
+        }
+    } catch (error) {
+        await transaction.rollback();
+        next(error);
+    }
+};
+
+export const checkTokenExistence = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id;
+        if(isNaN(parseInt(id))){
+            res.status(400).json({message: 'Invalid user ID.'});
+            return;
+        };
+        const token = await db.Token.findOne({ where: { userId: id } });
+        if(token){
+            res.status(200).json({ message: 'Token exists for this user.' });
+        }else{
+            res.status(404).json({ message: 'No token found for this user.' });
+        };
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateUserDesc = async (req: Request, res: Response, next: NextFunction) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const desc = req.body.desc as string;
+        const id = req.params.id;
+        if(isNaN(parseInt(id))){
+            res.status(400).json({message: 'Invalid user ID.'});
+            await transaction.rollback();
+            return;
+        };
+        const user = await db.User.findByPk(id);
+        if(!user){
+            res.status(404).json({message: 'User not found.'});
+            await transaction.rollback();
+            return;
+        }else{
+            user.desc = desc;
+            await user.save();
+            res.status(200).json({message: 'User description updated successfully.'});
+            await transaction.commit();
+            return;
+        }
+    } catch (error) {
+        await transaction.rollback();
+        next(error);
+    }
+}
