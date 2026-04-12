@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
 import { Options } from 'sequelize';
 
-dotenv.config(); // 載入 .env 檔案中的環境變數
+if(process.env.NODE_ENV !== 'production'){
+  dotenv.config(); // 載入 .env 檔案中的環境變數
+}
 
 interface DbConfig {
   development: Options;
