@@ -41,9 +41,13 @@ const universalErrorHandler : ErrorRequestHandler = (err: Error, req: Request, r
 
 app.use(universalErrorHandler);
 
-app.listen(port, host, () => {
-  if (port === 8764) {
-    console.log('true')
-  }
-  console.log(`server is listening on ${host}:${port} !!!`);
-});
+module.exports = app;
+
+if(require.main === module){
+  app.listen(port, host, () => {
+    if (port === 8764) {
+      console.log('true')
+    }
+    console.log(`server is listening on ${host}:${port} !!!`);
+  });
+}
