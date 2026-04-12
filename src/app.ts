@@ -41,7 +41,7 @@ const universalErrorHandler : ErrorRequestHandler = (err: Error, req: Request, r
 
 app.use(universalErrorHandler);
 
-module.exports = app;
+export default app;
 
 if(require.main === module){
   app.listen(port, host, () => {
