@@ -23,6 +23,12 @@ const config: DbConfig = {
   },
   production: {
     // 生產環境設定
+    username: process.env.DB_PRODUCTION_USERNAME || 'backend',
+    password: process.env.DB_PRODUCTION_PASSWORD,
+    database: process.env.DB_NAME || 'khurhymingdict.ddns.net',
+    host: process.env.DB_HOST || '8763',
+    dialect: 'mysql',
+    logging: false,
   },
 };
 
