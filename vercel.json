@@ -3,7 +3,13 @@
     "builds": [
         {
             "src": "app.ts",
-            "use": "@verce/node"
+            "use": "@now/node"
+        }
+    ],
+    "routes":[
+        {
+            "src":"(.*)",
+            "dest": "app.ts"
         }
     ],
     "rewrites":[
