@@ -17,6 +17,7 @@ const config: DbConfig = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'KHURhymingDict',
     host: process.env.DB_HOST || '8763',
+    port: 8763,
     dialect: 'mysql',
     logging: false, // 設置為 true 可以看到 SQL 查詢日誌
   },
@@ -27,8 +28,9 @@ const config: DbConfig = {
     // 生產環境設定
     username: process.env.DB_PRODUCTION_USERNAME || 'backend',
     password: process.env.DB_PRODUCTION_PASSWORD,
-    database: process.env.DB_NAME || 'khurhymingdict.ddns.net',
-    host: process.env.DB_HOST || '8763',
+    database: process.env.DB_NAME || 'KHURhymingDict',
+    host: process.env.DB_PRODUCTION_HOST || 'khurhymedict.ddns.net',
+    port: 3306,
     dialect: 'mysql',
     logging: false,
   },

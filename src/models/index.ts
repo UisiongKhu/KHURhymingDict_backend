@@ -14,11 +14,11 @@ import tokenInit, { Token } from './token';
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
 
-const sequelize = new Sequelize(config.development.database!, config.development.username!, config.development.password, {
-  host: 'localhost',
-  port: 8763,
-  dialect: 'mysql',
-  logging: config.development.logging,
+const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  dialect: dbConfig.dialect,
+  logging: dbConfig.logging,
 });
 
 export interface Db {
