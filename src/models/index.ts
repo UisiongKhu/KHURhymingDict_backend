@@ -18,6 +18,7 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
   host: dbConfig.host,
   port: dbConfig.port,
   dialect: dbConfig.dialect,
+  dialectModule: require('mysql2'),
   logging: dbConfig.logging,
 });
 
