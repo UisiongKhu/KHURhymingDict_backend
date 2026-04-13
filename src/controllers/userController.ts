@@ -85,6 +85,12 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                 return;
             }else{
                 // Login successful, generate JWT token
+                const lastLoginAt = new Date();
+                const userData = {
+                    type: user.type,
+                    nickname: user.nickname,
+                    lastLoginAt: lastLoginAt
+                };
                 const token = jwt.sign({
                     id: user.id,
                     email: user.email,
@@ -96,8 +102,8 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                     token,
                     expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours expiration
                 });
-                await db.User.update({ lastLoginAt: new Date() }, { where: { id: user.id } }); // Update last login time
-                res.status(200).json({message: 'login_successfully', token, lastLoginAt: user.lastLoginAt});
+                await db.User.update({ lastLoginAt }, { where: { id: user.id } }); // Update last login time
+                res.status(200).json({message: 'login_successfully', token, user: userData});
                 await transaction.commit();
             }
         }
