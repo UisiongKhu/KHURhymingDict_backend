@@ -90,7 +90,6 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                     email: user.email,
                     type: user.type,
                     nickname: user.nickname,
-                    lastLoginAt: user.lastLoginAt
                 }, process.env.JWT_SECRET!, { expiresIn: '12h' });
                 await db.Token.create({ // Store the token in DB for session management
                     userId: user.id,
@@ -98,7 +97,7 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                     expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours expiration
                 });
                 await db.User.update({ lastLoginAt: new Date() }, { where: { id: user.id } }); // Update last login time
-                res.status(200).json({message: 'login_successfully', token});
+                res.status(200).json({message: 'login_successfully', token, lastLoginAt: user.lastLoginAt});
                 await transaction.commit();
             }
         }
