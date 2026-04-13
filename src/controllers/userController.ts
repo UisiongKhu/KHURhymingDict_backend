@@ -89,7 +89,8 @@ export const userLogin = async (req: Request, res: Response, next: NextFunction)
                     id: user.id,
                     email: user.email,
                     type: user.type,
-                    nickname: user.nickname
+                    nickname: user.nickname,
+                    lastLoginAt: user.lastLoginAt
                 }, process.env.JWT_SECRET!, { expiresIn: '12h' });
                 await db.Token.create({ // Store the token in DB for session management
                     userId: user.id,
