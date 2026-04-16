@@ -985,9 +985,12 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             return;
         }
 
-        const getSyllables = () => {
+        const getSyllables = () : Syllable[] => {
             if (hanjiKip !== undefined && keyword){
-                return keyword?.toJSON().wordLinks!.map(wordLinkData => wordLinkData.syllable);
+                const links = keyword.toJSON().wordLinks;
+                if(!links) return [];
+
+                return links.map(wordLinkData => wordLinkData.syllable!);
             }else if(typeof lomaji === 'string'){
                 const syllableArr = getLomajiArr(lomaji);
                 return syllableArr.map(syllable=>({
@@ -998,20 +1001,27 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
                     tone: getTone(syllable),
                 }) as Syllable);
             }
+            return [];
         };
-        const syllables : (Syllable|undefined)[] | undefined = getSyllables();
-        
+        const syllables : Syllable[] = getSyllables();
+        if(!syllables || syllables.length===0){
+            res.status(400).json({
+                message: 'Could not resolve syllables from input.',
+                successful: false,
+            });
+        }
 
         let conditionString = ``;
         for(let i=0; i<Number(rhymingSyllableCount); i++){
             if(i>0) conditionString += ` OR `;
             conditionString += getRhymingCondition(i, (syllables!.at(syllables!.length-i-1))!, opts);
         }
+        const excludeCondition = keyword ? `w.id !=${keyword.id}` : `1=1`;
         const query = `
             SELECT w.lomaji, w.hanji_kip AS hanjiKip FROM words AS w
             INNER JOIN WordSyllables AS ws ON w.id = ws.word_id
             INNER JOIN syllables AS s ON ws.syllable_id = s.id
-            WHERE w.id != ${keyword?`${keyword.id} AND`:``} ${conditionString}
+            WHERE ${excludeCondition} AND ${conditionString}
             GROUP BY w.id
             HAVING COUNT(*) = ${rhymingSyllableCount};
         `;
