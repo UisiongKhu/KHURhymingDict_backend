@@ -157,13 +157,23 @@ export const getNaturalToneMarkIndex = (str : string) => {
     if(indexDot2 !== -1) return indexDot2;
     return null;
 };
-export const getLomajiArr = (str : string) => {
+/*export const getLomajiArr = (str : string) => {
     const lowercasedStr = str.toLowerCase();
     const cleanedStr = lowercasedStr.replace(/[-.,;?!–—]/g, ' ');
     const resultArr = cleanedStr.split(/\s+/).filter(word => word.length > 0);
 
     return resultArr;
+};*/
+
+export const getLomajiArr = (str: string) => {
+    const normalized = str.normalize('NFC').toLowerCase();
+    
+    return normalized
+        .split('-')
+        .map(s => s.replace(/[.,;?!]/g, '').trim())
+        .filter(s => s.length > 0);
 };
+
 export const getHanjiKipArr = (str : string) => {
     const cleanedStr = str.replace(/[，。！？；：「」……]/g,'');
     // Pún chiâⁿ ê hong hoat sī tī replace() ê āu piah thiⁿ split(''), m̄ koh án ne ē kā Unicode chhiau kòe FFFF ê jī goân chhiat chò 2 hūn.
