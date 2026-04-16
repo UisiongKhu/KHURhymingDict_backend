@@ -20,7 +20,7 @@ const tonedLetters = {
     m: ['m','ḿ','m̀','m','m̂','m̌','m̄','m̍','m̆'],
 }
 
-export const getTone = (syllable: string): number | null => {
+export const getTone = (syllable: string): number => {
     // 1. 優先檢查有明確標記 ê 音調符號（比方講 á, à, â 這款）
     for (const baseVowel in tonedLetters) {
         if (Object.prototype.hasOwnProperty.call(tonedLetters, baseVowel)) {

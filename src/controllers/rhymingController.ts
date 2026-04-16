@@ -461,7 +461,7 @@ export const syllableRhyming : RequestHandler = async (req: Request, res: Respon
     }
 };*/
 
-export const wordRhymingByInput = async (req: Request, res: Response, next: NextFunction) => {
+export const wordRhymingByInputLecagy = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const {lomaji, hanjiKip, limit, page, rhymingSyllableCount, ignoreNasalSound, similarVowel, ignoreFinalSound, sameArticulationPart, sameTone} = req.query;
 
@@ -980,7 +980,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             order: [[{ model: db.WordSyllables, as: 'wordLinks' }, 'order', 'ASC']],
         });
 
-        if(!keyword){
+        if(!keyword && hanjiKip !== undefined){
             res.status(404).json({ message: 'No matching word found.', successful: false });
             return;
         }
@@ -996,7 +996,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             SELECT w.lomaji, w.hanji_kip AS hanjiKip FROM words AS w
             INNER JOIN WordSyllables AS ws ON w.id = ws.word_id
             INNER JOIN syllables AS s ON ws.syllable_id = s.id
-            WHERE w.id != ${keyword.id} AND ${conditionString}
+            WHERE w.id != ${keyword?`${keyword.id} AND`:``} ${conditionString}
             GROUP BY w.id
             HAVING COUNT(*) = ${rhymingSyllableCount};
         `;
@@ -1010,10 +1010,10 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
         });
         console.log(results);
 
-        if(!results){
-            res.status(200).json({ message: 'No rhyming words found matching the criteria.', successful: true, data: [] });
+        if(Array.isArray(results) && results.length > 0){
+            res.status(200).json({ successful: true, count: results.length,  data: results, query });
         }else{
-            res.status(200).json({ successful: true, count: results.length,  data: results });
+            res.status(200).json({ message: 'No rhyming words found matching the criteria.', successful: true, query: query });
         }
 
     } catch (error) {
