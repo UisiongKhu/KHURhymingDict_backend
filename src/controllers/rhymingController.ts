@@ -979,22 +979,28 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             ],
             order: [[{ model: db.WordSyllables, as: 'wordLinks' }, 'order', 'ASC']],
         });
-        let syllables : Syllable[];
+
         if(!keyword && hanjiKip !== undefined){
             res.status(404).json({ message: 'No matching word found.', successful: false });
             return;
-        }else if (hanjiKip !== undefined && keyword){
-            let syllables = keyword?.toJSON().wordLinks?.map(wordLinkData => wordLinkData.syllable);
-        }else if(typeof lomaji === 'string'){
-            const syllableArr = getLomajiArr(lomaji);
-            let syllables = syllableArr.map(syllable=>({
-                lomaji: syllable,
-                vowel: getVowel(syllable),
-                coda: getCoda(syllable),
-                nasal: getNasal(syllable),
-                tone: getTone(syllable),
-            }) as Syllable);
         }
+
+        const getSyllables = () => {
+            if (hanjiKip !== undefined && keyword){
+                return keyword?.toJSON().wordLinks!.map(wordLinkData => wordLinkData.syllable);
+            }else if(typeof lomaji === 'string'){
+                const syllableArr = getLomajiArr(lomaji);
+                return syllableArr.map(syllable=>({
+                    lomaji: syllable,
+                    vowel: getVowel(syllable),
+                    coda: getCoda(syllable),
+                    nasal: getNasal(syllable),
+                    tone: getTone(syllable),
+                }) as Syllable);
+            }
+        };
+        const syllables : (Syllable|undefined)[] | undefined = getSyllables();
+        
 
         let conditionString = ``;
         for(let i=0; i<Number(rhymingSyllableCount); i++){
