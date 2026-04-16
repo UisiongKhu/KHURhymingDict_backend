@@ -65,7 +65,7 @@ const SameArituculationPartCodas : {[key: string]: any[]} = {
 }
 
 const getRhymingCondition = (index: number, rhymingTarget: syllableQueryParams, options: RhymeSearchOptions) => {
-    const toneStr = options.SameTone ? `` : ` AND s.tone = '${rhymingTarget.tone}' `;
+    const toneStr = options.SameTone ? ` AND s.tone = '${rhymingTarget.tone}' ` : ` `;
     const vowelStr = options.SimilarVowel ? ` AND s.vowel IN (${SimilarVowels[rhymingTarget.vowel]?.map((v) => `'${v}'`).join(', ')})` : ` AND s.vowel = '${rhymingTarget.vowel}' `;
     const nasalStr = options.IgnoreNasalSound ? `` : ` AND s.nasal = '${rhymingTarget.nasal?1:0}' `;
     let codaStr = ``;
