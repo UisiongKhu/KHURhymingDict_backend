@@ -1011,9 +1011,9 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
         console.log(results);
 
         if(Array.isArray(results) && results.length > 0){
-            res.status(200).json({ successful: true, count: results.length,  data: results, query });
+            res.status(200).json({ successful: true, count: results.length,  data: results});
         }else{
-            res.status(200).json({ message: 'No rhyming words found matching the criteria.', successful: true, query: query });
+            res.status(200).json({ message: 'No rhyming words found matching the criteria.', successful: true});
         }
 
     } catch (error) {
