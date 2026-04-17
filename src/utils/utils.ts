@@ -105,6 +105,7 @@ export const getConsonant = (str : string) => {
 export const getVowel = (str : string) => {
     str = getCleanSyllable(str);
     const consonant = getConsonant(str);
+    const coda = getCoda(str);
     if(consonant!=='' && consonant !== undefined){
         let strA = str.slice(0,consonant.length-1);
         const strB = str.slice(consonant.length);
@@ -122,7 +123,7 @@ export const getVowel = (str : string) => {
                     return vowelOu;
                 }else return vowel;
             }
-            if(vowel==='ia'){
+            if(vowel==='ia' && (coda==='n'||coda==='t')){
                 return 'ie'; // In DB, we store /ian/ as /ien/. Because ian is not rhyming with an nowaday.
             }
             return vowel;
