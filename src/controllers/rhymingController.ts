@@ -1004,6 +1004,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             return [];
         };
         const syllables : Syllable[] = getSyllables();
+        console.log(`syllables=${syllables}`);
         if(!syllables || syllables.length===0){
             res.status(400).json({
                 message: 'Could not resolve syllables from input.',
@@ -1025,6 +1026,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             GROUP BY w.id
             HAVING COUNT(*) = ${rhymingSyllableCount};
         `;
+        console.log(`query=${query}`)
         interface RhymeResult {
             lomaji: string;
             hanjiKip: string;
