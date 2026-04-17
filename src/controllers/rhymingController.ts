@@ -1022,7 +1022,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             SELECT w.lomaji, w.hanji_kip AS hanjiKip FROM words AS w
             INNER JOIN WordSyllables AS ws ON w.id = ws.word_id
             INNER JOIN syllables AS s ON ws.syllable_id = s.id
-            WHERE ${excludeCondition} AND ${conditionString}
+            WHERE ${excludeCondition} AND ( ${conditionString} )
             GROUP BY w.id
             HAVING COUNT(*) = ${rhymingSyllableCount};
         `;
