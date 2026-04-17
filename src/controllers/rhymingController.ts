@@ -1017,7 +1017,7 @@ export const wordRhymingByWord = async (req: Request, res: Response, next: NextF
             if(i>0) conditionString += ` OR `;
             conditionString += getRhymingCondition(i, (syllables!.at(syllables!.length-i-1))!, opts);
         }
-        const excludeCondition = keyword ? `w.id !=${keyword.id}` : `1=1`;
+        const excludeCondition = !lomaji && hanjiKip && keyword ? `w.id !=${keyword.id}` : `1=1`;
         const query = `
             SELECT w.lomaji, w.hanji_kip AS hanjiKip FROM words AS w
             INNER JOIN WordSyllables AS ws ON w.id = ws.word_id
