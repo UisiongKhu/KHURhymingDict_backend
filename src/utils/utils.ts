@@ -122,7 +122,7 @@ export const getVowel = (str : string) => {
                     return vowelOu;
                 }else return vowel;
             }
-            if(vowel==='ia'){
+            if(vowel==='ia' && (str.endsWith('n')||str.endsWith('t'))){
                 return 'ie'; // In DB, we store /ian/ as /ien/. Because ian is not rhyming with an nowaday.
             }
             return vowel;
